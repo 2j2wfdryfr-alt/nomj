@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>生成密钥</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:system-ui,sans-serif}
+body{background:#0b0e13;color:#e8f0ff;display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px}
+.card{background:#151a22;border:1px solid #262d38;border-radius:20px;padding:30px 24px;max-width:480px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.6)}
+h1{font-size:20px;margin-bottom:20px;color:#cddfff}
+input{width:100%;padding:12px;border-radius:10px;border:1px solid #2e3746;background:#0e1218;color:#e8f0ff;font-size:15px;outline:none;margin-bottom:10px}
+input:focus{border-color:#5a7fff}
+button{width:100%;padding:14px;border-radius:12px;border:none;background:linear-gradient(135deg,#4a6eff,#8a5aff);color:#fff;font-size:16px;font-weight:600;cursor:pointer}
+button:active{transform:scale(.98)}
+#out{margin-top:16px;background:#0e1218;padding:12px;border-radius:10px;font-family:monospace;font-size:13px;white-space:pre-wrap;min-height:60px;color:#9fe6b0;word-break:break-all;display:none}
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>生成密钥（白名单 + 卡密）</h1>
+  <input id="pw" placeholder="管理员密码" type="password">
+  <input id="count" placeholder="生成对数（默认 10）" type="number" value="10">
+  <button onclick="gen()">生成</button>
+  <div id="out"></div>
+</div>
+
+<script>
+async function gen() {
+  const pw = document.getElementById('pw').value;
+  const count = document.getElementById('count').value || 10;
+  const out = document.getElementById('out');
+  out.style.display='block';
+  out.textContent = '生成中...';
+  try {
+    const res = await fetch('/api/genkey', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({password: pw, count: count})
+    });
+    const text = await res.text();
+    if (text === 'BAD_PW') { out.textContent = '密码错误'; out.style.color='#ff7a7a'; return; }
+    if (text === 'WRITE_FAIL') { out.textContent = '写入失败'; out.style.color='#ff7a7a'; return; }
+    if (text === 'ERROR' || text === 'NO') { out.textContent = '错误'; out.style.color='#ff7a7a'; return; }
+    out.style.color='#9fe6b0';
+    out.textContent = text;
+  } catch (e) {
+    out.textContent = '网络错误';
+    out.style.color='#ff7a7a';
+  }
+}
+</script>
+</body>
+</html>
