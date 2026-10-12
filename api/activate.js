@@ -1,4 +1,4 @@
-const BIN_ID = "6acc8453ffd5d16053635c45";
+const BIN_ID = "6acc89a6ac6210605a29c613";
 const MASTER_KEY = "$2a$10$.eNyQiLipdVQkup9EqsCReuGAGJXnN3RGXprxbT.DnD1pcC48aHTe";
 
 export default async function handler(req, res) {
