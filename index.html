@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>激活密钥</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:system-ui,sans-serif}
+body{background:#0b0e13;color:#e8f0ff;display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px}
+.card{background:#151a22;border:1px solid #262d38;border-radius:20px;padding:30px 24px;max-width:380px;width:100%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.6)}
+h1{font-size:20px;margin-bottom:8px;color:#cddfff}
+p.sub{font-size:13px;color:#7d8fa8;margin-bottom:24px}
+input{width:100%;padding:14px;border-radius:12px;border:1px solid #2e3746;background:#0e1218;color:#e8f0ff;font-size:15px;outline:none;text-align:center;letter-spacing:2px}
+input:focus{border-color:#5a7fff}
+button{width:100%;margin-top:14px;padding:14px;border-radius:12px;border:none;background:linear-gradient(135deg,#4a6eff,#8a5aff);color:#fff;font-size:16px;font-weight:600;cursor:pointer}
+button:active{transform:scale(.98)}
+#msg{margin-top:16px;font-size:14px;min-height:20px}
+.ok{color:#6bff8a}
+.err{color:#ff7a7a}
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>激活密钥</h1>
+  <p class="sub">输入你的专属密钥完成激活</p>
+  <input id="keyInput" placeholder="UI-XXXX-XXXX-XXXX" autocomplete="off">
+  <button onclick="activate()">激活</button>
+  <div id="msg"></div>
+</div>
+
+<script>
+async function activate() {
+  const key = document.getElementById('keyInput').value.trim();
+  const msg = document.getElementById('msg');
+  if (!key) { msg.className='err'; msg.textContent='请输入密钥'; return; }
+  msg.className=''; msg.textContent='验证中...';
+
+  const userId = prompt('请输入你的 Roblox UserId（数字）');
+  if (!userId) { msg.className='err'; msg.textContent='未提供 UserId'; return; }
+
+  try {
+    const res = await fetch('/api/activate', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({key: key, userId: userId})
+    });
+    const text = await res.text();
+    if (text === 'OK') { msg.className='ok'; msg.textContent='激活成功！现在可以进游戏使用脚本了'; }
+    else if (text === 'USED') { msg.className='err'; msg.textContent='该密钥已被其他账号绑定'; }
+    else if (text === 'NO_KEY') { msg.className='err'; msg.textContent='密钥不存在，请检查'; }
+    else if (text === 'NO_KEY_OR_ID') { msg.className='err'; msg.textContent='密钥或 ID 为空'; }
+    else { msg.className='err'; msg.textContent='激活失败: '+text; }
+  } catch (e) {
+    msg.className='err'; msg.textContent='网络错误，请重试';
+  }
+}
+</script>
+</body>
+</html>
