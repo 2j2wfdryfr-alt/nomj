@@ -1,5 +1,6 @@
-const BIN_ID = "6acc89a6ac6210605a29c613";
-const MASTER_KEY = "$2a$10$.eNyQiLipdVQkup9EqsCReuGAGJXnN3RGXprxbT.DnD1pcC48aHTe";
+const GITHUB_TOKEN = "ghp_HJdpeF9EnbQJapcqPGJ5uDy7hi6BdB0fDyJz";
+const GITHUB_USER = "2j2wfdryfr-alt";
+const GITHUB_REPO = "keydata";
 const ADMIN_PASSWORD = "MyKey2026!";
 
 function rand(n) {
@@ -18,18 +19,34 @@ export default async function handler(req, res) {
 
     if (pw !== ADMIN_PASSWORD) return res.status(200).send("BAD_PW");
 
-    const readRes = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`, {
-      headers: { "X-Master-Key": MASTER_KEY }
+    const apiUrl = `https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/keys.json`;
+
+    const readRes = await fetch(apiUrl, {
+      headers: {
+        "Authorization": `token ${GITHUB_TOKEN}`,
+        "User-Agent": "vercel-genkey"
+      }
     });
     const readData = await readRes.json();
-    const data = readData.record || { keys: {} };
-    if (!data.keys) data.keys = {};
+
+    let current = { keys: {} };
+    let sha = null;
+    if (readData && readData.content) {
+      sha = readData.sha;
+      const decoded = Buffer.from(readData.content, "base64").toString("utf-8");
+      try {
+        current = JSON.parse(decoded);
+      } catch (e) {
+        current = { keys: {} };
+      }
+    }
+    if (!current.keys) current.keys = {};
 
     const list = [];
     for (let i = 0; i < count; i++) {
       const whiteKey = "UI-" + rand(4) + "-" + rand(4) + "-" + rand(4);
       const cardKey = "CARD-" + rand(4) + "-" + rand(4) + "-" + rand(4);
-      data.keys[whiteKey] = {
+      current.keys[whiteKey] = {
         userId: "",
         boundAt: "",
         cardKey: cardKey
@@ -37,18 +54,30 @@ export default async function handler(req, res) {
       list.push(whiteKey + " | " + cardKey);
     }
 
-    const writeRes = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
+    const newContent = Buffer.from(JSON.stringify(current, null, 2)).toString("base64");
+    const writeBody = {
+      message: "gen keys",
+      content: newContent
+    };
+    if (sha) writeBody.sha = sha;
+
+    const writeRes = await fetch(apiUrl, {
       method: "PUT",
       headers: {
+        "Authorization": `token ${GITHUB_TOKEN}`,
         "Content-Type": "application/json",
-        "X-Master-Key": MASTER_KEY
+        "User-Agent": "vercel-genkey"
       },
-      body: JSON.stringify(data)
+      body: JSON.stringify(writeBody)
     });
 
-    if (!writeRes.ok) return res.status(200).send("WRITE_FAIL");
+    if (!writeRes.ok) {
+      const errText = await writeRes.text();
+      return res.status(200).send("WRITE_FAIL: " + errText.slice(0, 200));
+    }
+
     return res.status(200).send(list.join("\n"));
   } catch (e) {
-    return res.status(200).send("ERROR");
+    return res.status(200).send("ERROR: " + e.message);
   }
 }
