@@ -1,4 +1,4 @@
-const GITHUB_TOKEN = "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";
+const GITHUB_TOKEN = "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";
 const GITHUB_USER = "2j2wfdryfr-alt";
 const GITHUB_REPO = "keydata";
 const ADMIN_PASSWORD = "MyKey2026!";
