@@ -1,6 +1,5 @@
-const GITHUB_TOKEN = "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";
-const GITHUB_USER = "2j2wfdryfr-alt";
-const GITHUB_REPO = "keydata";
+const BIN_ID = "6acc89a6ac6210605a29c613";
+const MASTER_KEY = "$2a$10$.eNyQiLipdVQkup9EqsCReuGAGJXnN3RGXprxbT.DnD1pcC48aHTe";
 const ADMIN_PASSWORD = "MyKey2026!";
 
 function rand(n) {
@@ -19,56 +18,34 @@ export default async function handler(req, res) {
 
     if (pw !== ADMIN_PASSWORD) return res.status(200).send("BAD_PW");
 
-    const apiUrl = `https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/keys.json`;
+    const url = `https://api.jsonbin.io/v3/b/${BIN_ID}/latest`;
 
-    const readRes = await fetch(apiUrl, {
-      headers: {
-        "Authorization": `token ${GITHUB_TOKEN}`,
-        "User-Agent": "vercel-genkey"
-      }
+    const readRes = await fetch(url, {
+      headers: { "X-Master-Key": MASTER_KEY }
     });
     const readData = await readRes.json();
-
-    let current = { keys: {} };
-    let sha = null;
-    if (readData && readData.content) {
-      sha = readData.sha;
-      const decoded = Buffer.from(readData.content, "base64").toString("utf-8");
-      try {
-        current = JSON.parse(decoded);
-      } catch (e) {
-        current = { keys: {} };
-      }
-    }
-    if (!current.keys) current.keys = {};
+    const data = readData.record || { keys: {} };
+    if (!data.keys) data.keys = {};
 
     const list = [];
     for (let i = 0; i < count; i++) {
       const whiteKey = "UI-" + rand(4) + "-" + rand(4) + "-" + rand(4);
       const cardKey = "CARD-" + rand(4) + "-" + rand(4) + "-" + rand(4);
-      current.keys[whiteKey] = {
+      data.keys[whiteKey] = {
         userId: "",
         boundAt: "",
         cardKey: cardKey
       };
-      list.push(whiteKey + " | " + cardKey);
+      list.push(cardKey);
     }
 
-    const newContent = Buffer.from(JSON.stringify(current, null, 2)).toString("base64");
-    const writeBody = {
-      message: "gen keys",
-      content: newContent
-    };
-    if (sha) writeBody.sha = sha;
-
-    const writeRes = await fetch(apiUrl, {
+    const writeRes = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
       method: "PUT",
       headers: {
-        "Authorization": `token ${GITHUB_TOKEN}`,
         "Content-Type": "application/json",
-        "User-Agent": "vercel-genkey"
+        "X-Master-Key": MASTER_KEY
       },
-      body: JSON.stringify(writeBody)
+      body: JSON.stringify(data)
     });
 
     if (!writeRes.ok) {
